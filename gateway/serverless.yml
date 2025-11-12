@@ -1,0 +1,32 @@
+service: blogify-gateway
+frameworkVersion: '4'
+
+provider:
+  name: aws
+  runtime: nodejs18.x
+  region: eu-west-3
+
+# Pas de fonctions ici: on va juste créer une HTTP API réutilisable
+resources:
+  Resources:
+    BlogifyHttpApi:
+      Type: AWS::ApiGatewayV2::Api
+      Properties:
+        Name: BlogifyHttpApi
+        ProtocolType: HTTP
+    BlogifyHttpApiStage:
+      Type: AWS::ApiGatewayV2::Stage
+      Properties:
+        ApiId: !Ref BlogifyHttpApi
+        StageName: v1
+        AutoDeploy: true
+
+  Outputs:
+    HttpApiId:
+      Value: !Ref BlogifyHttpApi
+      Export:
+        Name: BlogifyHttpApiId
+    HttpApiEndpoint:
+      Value: !GetAtt BlogifyHttpApi.ApiEndpoint
+      Export:
+        Name: BlogifyHttpApiEndpoint

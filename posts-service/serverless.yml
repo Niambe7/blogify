@@ -1,0 +1,85 @@
+service: posts-service
+frameworkVersion: '4'
+
+provider:
+  name: aws
+  stage: dev
+  runtime: nodejs18.x
+  region: eu-west-3
+  environment:
+    POSTS_TABLE: ${self:service}-PostsTable-${sls:stage}
+  # >>> On laisse Serverless créer SA propre HTTP API pour ce service
+  httpApi:
+    cors: true
+    authorizers:
+      CognitoJwt:
+        type: jwt
+        identitySource: $request.header.Authorization
+        issuerUrl: https://cognito-idp.eu-west-3.amazonaws.com/eu-west-3_gWu9ypjZR
+        audience:
+          - 70365oucgois2g1ovaj8dr5vi5
+  iam:
+    role:
+      statements:
+        - Effect: Allow
+          Action:
+            - dynamodb:PutItem
+            - dynamodb:GetItem
+            - dynamodb:UpdateItem
+            - dynamodb:DeleteItem
+            - dynamodb:Scan
+          Resource: arn:aws:dynamodb:${aws:region}:*:table/${self:provider.environment.POSTS_TABLE}
+
+functions:
+  createPost:
+    handler: handler.createPost
+    events:
+      - httpApi:
+          method: POST
+          path: /posts
+          authorizer:
+            name: CognitoJwt   # protégé (JWT requis)
+  listPosts:
+    handler: handler.listPosts
+    events:
+      - httpApi:
+          method: GET
+          path: /posts            # public
+  getPost:
+    handler: handler.getPost
+    events:
+      - httpApi:
+          method: GET
+          path: /posts/{id}       # public
+  updatePost:
+    handler: handler.updatePost
+    events:
+      - httpApi:
+          method: PUT
+          path: /posts/{id}
+          authorizer:
+            name: CognitoJwt
+  deletePost:
+    handler: handler.deletePost
+    events:
+      - httpApi:
+          method: DELETE
+          path: /posts/{id}
+          authorizer:
+            name: CognitoJwt
+
+plugins: []
+
+resources:
+  Resources:
+    PostsTable:
+      Type: AWS::DynamoDB::Table
+      Properties:
+        TableName: ${self:provider.environment.POSTS_TABLE}
+        BillingMode: PAY_PER_REQUEST
+        AttributeDefinitions:
+          - AttributeName: postId
+            AttributeType: S
+        KeySchema:
+          - AttributeName: postId
+            KeyType: HASH

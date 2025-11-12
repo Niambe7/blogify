@@ -1,0 +1,8 @@
+gateway/node_modules/
+gateway/.serverless/
+
+posts-service/node_modules/
+posts-service/.serverless/
+
+media-service/node_modules/
+media-service/.serverless/
