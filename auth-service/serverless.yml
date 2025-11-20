@@ -1,0 +1,37 @@
+service: auth-service
+frameworkVersion: '4'
+
+provider:
+  name: aws
+  runtime: nodejs18.x
+  region: eu-west-3
+  httpApi:
+    cors:
+      allowedOrigins:
+        - "*"
+      allowedHeaders:
+        - "*"
+      allowedMethods:
+        - "*"
+
+functions:
+  signup:
+    handler: handler.signup
+    events:
+      - httpApi:
+          path: /auth/signup
+          method: POST
+
+  confirm:
+    handler: handler.confirm
+    events:
+      - httpApi:
+          path: /auth/confirm
+          method: POST
+
+  login:
+    handler: handler.login
+    events:
+      - httpApi:
+          path: /auth/login
+          method: POST

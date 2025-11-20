@@ -6,11 +6,27 @@ provider:
   stage: dev
   runtime: nodejs18.x
   region: eu-west-3
+
   environment:
     POSTS_TABLE: ${self:service}-PostsTable-${sls:stage}
-  # >>> On laisse Serverless créer SA propre HTTP API pour ce service
+
+  # HTTP API géré par ce service + CORS global
   httpApi:
-    cors: true
+    cors:
+      allowedOrigins:
+        - "*"
+      allowedHeaders:
+        - Content-Type
+        - Authorization
+        - X-Amz-Date
+        - X-Api-Key
+        - X-Amz-Security-Token
+      allowedMethods:
+        - GET
+        - POST
+        - PUT
+        - DELETE
+        - OPTIONS
     authorizers:
       CognitoJwt:
         type: jwt
@@ -18,6 +34,7 @@ provider:
         issuerUrl: https://cognito-idp.eu-west-3.amazonaws.com/eu-west-3_gWu9ypjZR
         audience:
           - 70365oucgois2g1ovaj8dr5vi5
+
   iam:
     role:
       statements:
@@ -39,18 +56,21 @@ functions:
           path: /posts
           authorizer:
             name: CognitoJwt   # protégé (JWT requis)
+
   listPosts:
     handler: handler.listPosts
     events:
       - httpApi:
           method: GET
-          path: /posts            # public
+          path: /posts        # public
+
   getPost:
     handler: handler.getPost
     events:
       - httpApi:
           method: GET
-          path: /posts/{id}       # public
+          path: /posts/{id}   # public
+
   updatePost:
     handler: handler.updatePost
     events:
@@ -59,6 +79,7 @@ functions:
           path: /posts/{id}
           authorizer:
             name: CognitoJwt
+
   deletePost:
     handler: handler.deletePost
     events:

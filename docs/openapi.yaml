@@ -1,0 +1,268 @@
+openapi: 3.0.3
+
+info:
+  title: Blogify API Documentation
+  description: >
+    Documentation complète pour les microservices Blogify :  
+    - Authentification (Cognito via Auth-service)  
+    - Gestion des articles (Posts-service)  
+    - Upload de médias (Media-service)
+  version: 1.0.0
+  contact:
+    name: Ndiambe Gueye
+    email: test@blogify.com
+
+servers:
+  - url: https://ca3d0iaov9.execute-api.eu-west-3.amazonaws.com
+    description: Auth-service
+  - url: https://38e42out38.execute-api.eu-west-3.amazonaws.com
+    description: Posts-service
+  - url: https://hm01ggqxei.execute-api.eu-west-3.amazonaws.com
+    description: Media-service
+
+tags:
+  - name: Auth
+    description: Authentification via Cognito (via Auth-service)
+  - name: Posts
+    description: Gestion des articles
+  - name: Media
+    description: Upload et récupération d’images
+
+paths:
+
+  ############################################################
+  #                        AUTH SERVICE                      #
+  ############################################################
+
+  /auth/signup:
+    post:
+      tags:
+        - Auth
+      summary: Inscription d’un utilisateur
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                email:
+                  type: string
+                password:
+                  type: string
+              required:
+                - email
+                - password
+      responses:
+        '200':
+          description: Code de confirmation envoyé par email
+        '400':
+          description: Paramètres invalides
+
+  /auth/confirm:
+    post:
+      tags:
+        - Auth
+      summary: Confirmer un utilisateur avec le code reçu par email
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                email:
+                  type: string
+                code:
+                  type: string
+              required:
+                - email
+                - code
+      responses:
+        '200':
+          description: Compte confirmé
+
+  /auth/login:
+    post:
+      tags:
+        - Auth
+      summary: Connexion et récupération du token JWT
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                email:
+                  type: string
+                password:
+                  type: string
+              required:
+                - email
+                - password
+      responses:
+        '200':
+          description: Tokens générés (id_token, access_token)
+
+  ############################################################
+  #                        POSTS SERVICE                     #
+  ############################################################
+
+  /posts:
+    get:
+      tags:
+        - Posts
+      summary: Liste des articles
+      responses:
+        '200':
+          description: Liste des articles
+
+    post:
+      tags:
+        - Posts
+      summary: Création d’un article
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                title:
+                  type: string
+                content:
+                  type: string
+              required:
+                - title
+                - content
+      responses:
+        '200':
+          description: Article créé
+
+  /posts/{id}:
+    get:
+      tags:
+        - Posts
+      summary: Récupérer un article par ID
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Article récupéré
+
+    put:
+      tags:
+        - Posts
+      summary: Mettre à jour un article
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                title:
+                  type: string
+                content:
+                  type: string
+      responses:
+        '200':
+          description: Article modifié
+
+    delete:
+      tags:
+        - Posts
+      summary: Supprimer un article
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Article supprimé
+
+  ############################################################
+  #                        MEDIA SERVICE                     #
+  ############################################################
+  /media/upload-url:
+    post:
+      tags:
+        - Media
+      summary: Génère une URL présignée pour uploader une image/vidéo
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - filename
+                - contentType
+              properties:
+                filename:
+                  type: string
+                  example: "photo.jpg"
+                contentType:
+                  type: string
+                  example: "image/jpeg"
+      responses:
+        '200':
+          description: URL présignée générée
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  uploadUrl:
+                    type: string
+                  fileKey:
+                    type: string
+        '400':
+          description: Erreur — paramètres manquants
+
+  /media/download-url:
+    get:
+      tags:
+        - Media
+      summary: Obtenir une URL temporaire pour télécharger une image
+      parameters:
+        - name: key
+          in: query
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: URL de téléchargement générée
+
+############################################################
+#                   SECURITY DEFINITIONS                   #
+############################################################
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
